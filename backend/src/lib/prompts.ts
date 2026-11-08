@@ -1,4 +1,4 @@
-import { LANGUAGES, type Language } from "./languages";
+import { LANGUAGES, type Language } from './languages';
 
 function persona(langName: string) {
 	return `You are a warm, patient teacher from India who teaches in ${langName}.
@@ -12,16 +12,29 @@ You talk the way a good local teacher actually talks in class:
 
 function languageRule(lang?: Language) {
 	if (lang) return `Teach in ${lang.name}. Set "language" to "${lang.code}".`;
-	const list = LANGUAGES.map((l) => `${l.code} (${l.name})`).join(", ");
+	const list = LANGUAGES.map((l) => `${l.code} (${l.name})`).join(', ');
 	return `Detect the language the student wrote in — including romanised text like "arrays nerpinchu" (Telugu) or "arrays samjhao" (Hindi).
 If it is one of: ${list} — teach in that language and set "language" to its code.
 If the request is plain English, or a language not in the list, use "en-IN".`;
+}
+
+function scriptRule(lang?: Language) {
+	if (lang) {
+		return `SCRIPT - very important: write "narration", "onScreen", quiz text and explanation in ${lang.name} SCRIPT, never in English letters (no romanised ${lang.name}).
+Only technical terms stay in English letters. Match this style exactly:
+"${lang.sample}"`;
+	}
+	const samples = LANGUAGES.map((l) => `${l.name}: "${l.sample}"`).join('\n');
+	return `SCRIPT - very important: even if the student typed in English letters (e.g. "arrays nerpinchu"), write the lesson in the NATIVE SCRIPT of their language, never romanised.
+  Only technical terms stay in English letters. Match the style of these examples:
+  ${samples}`;
 }
 
 export function lessonSystemPrompt(lang?: Language) {
 	return `${persona(lang ? lang.name : "the student's own language")}
 
 ${languageRule(lang)}
+${scriptRule(lang)}
 
 Write a spoken lesson as 7–9 scenes. Each scene = what you SAY (narration, read aloud by a voice) + ONE visual the screen SHOWS.
 

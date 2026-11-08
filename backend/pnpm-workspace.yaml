@@ -3,4 +3,5 @@ onlyBuiltDependencies:
   - workerd
 allowBuilds:
   esbuild: true
+  protobufjs: set this to true or false
   workerd: true
