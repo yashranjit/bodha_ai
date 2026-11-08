@@ -35,3 +35,5 @@ lerna-debug.log*
 lesson-te.json
 lesson-hi.json
 lesson-flash.json
+*.m4a
+*.wav

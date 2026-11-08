@@ -85,3 +85,9 @@ export const SceneSchema = z
 export const MetaSchema = z.object({ language: z.string(), title: z.string() });
 
 export type Scene = z.infer<typeof SceneSchema>;
+
+export const AnswerSchema = z.object({
+	narration: z.string().min(1),
+	onScreen: z.string().optional(),
+	visual: VisualSchema.optional().catch(undefined),
+});

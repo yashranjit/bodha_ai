@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { LANGUAGES } from './lib/languages';
+import { ask } from './routes/ask';
 import { lesson } from './routes/lesson';
 import { voice } from './routes/voice';
 
@@ -15,5 +16,6 @@ app.get('/api/languages', (c) =>
 
 app.route('/api/lesson', lesson);
 app.route('/api', voice);
+app.route('/api/ask', ask);
 
 export default app;

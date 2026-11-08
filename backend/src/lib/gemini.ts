@@ -5,6 +5,7 @@ interface Prompt {
 	user: string;
 	json?: boolean;
 	temperature?: number;
+	thinking?: ThinkingLevel;
 }
 
 const aiErrors = [429, 500, 503];
@@ -45,7 +46,7 @@ export async function generateGemini(
 					temperature: prompt.temperature ?? 0.7,
 					responseMimeType: prompt.json ? 'application/json' : 'text/plain',
 					thinkingConfig: {
-						thinkingLevel: ThinkingLevel.LOW,
+						thinkingLevel: prompt.thinking ?? ThinkingLevel.LOW,
 					},
 					abortSignal: AbortSignal.timeout(TIMEOUT),
 				},
@@ -110,7 +111,7 @@ export async function* streamGemini(
 					systemInstruction: prompt.system,
 					temperature: prompt.temperature ?? 0.7,
 					thinkingConfig: {
-						thinkingLevel: ThinkingLevel.LOW,
+						thinkingLevel: prompt.thinking ?? ThinkingLevel.LOW,
 					},
 					abortSignal: controller.signal,
 				},
