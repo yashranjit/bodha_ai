@@ -1,75 +1,156 @@
-import { ApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { ApiError, GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 interface Prompt {
-	system: string;
-	user: string;
-	json?: boolean;
-	temperature?: number;
+  system: string;
+  user: string;
+  json?: boolean;
+  temperature?: number;
 }
 
-// 503 -> overloaded, rate-limited - 429, 500 - server error : worth trying another model
-const RETRYABLE = [429, 500, 503];
+const aiErrors = [429, 500, 503];
 
-const TIMEOUT_MS = 30_000; // giving each model 30secs before moving on
+const TIMEOUT = 30000;
 
-function isTimeout(err: unknown) {
-	return (
-		err instanceof Error &&
-		(err.name === 'TimeoutError' || err.name === 'AbortError')
-	);
+class InvalidJsonError extends Error{
+  name = "InvalidJsonError";
 }
 
-class BadJsonError extends Error {
-	name = 'BadJsonError';
+function isRetryable(error: unknown): boolean{
+  if (error instanceof ApiError) return aiErrors.includes(error.status);
+  return (
+    error instanceof Error && ["TimeoutError", "AbortError", "InvalidJsonError"].includes(error.name)
+  )
 }
 
-export async function generateGemini(env: Env, p: Prompt): Promise<string> {
-	const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
-	const models = [env.GEMINI_MODEL, env.GEMINI_FALLBACK_MODEL];
+export async function generateGemini(env: Env, prompt: Prompt): Promise<string> {
+  const ai = new GoogleGenAI({
+    apiKey: env.GEMINI_API_KEY,
+  });
 
-	for (const [i, model] of models.entries()) {
-		const isLast = i === models.length - 1;
-		try {
-			console.log(`-> trying ${model}...`);
-			const started = Date.now();
-			const res = await ai.models.generateContent({
-				model,
-				contents: p.user,
-				config: {
-					systemInstruction: p.system,
-					temperature: p.temperature ?? 0.7,
-					responseMimeType: p.json ? 'application/json' : 'text/plain',
-					thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-					abortSignal: AbortSignal.timeout(TIMEOUT_MS),
-				},
-			});
-			console.log(
-				`${model} took ${((Date.now() - started) / 1000).toFixed(1)}s`,
-			);
+  const models = [
+    env.GEMINI_MODEL,
+    env.GEMINI_FALLBACK_MODEL,
+  ];
 
-			const text = res.text ?? '';
-			if (p.json) {
-				try {
-					JSON.parse(text);
-				} catch {
-					throw new BadJsonError(`${model} return invalid JSON`);
-				}
-			}
+  for (const model of models) {
+    try {
+      console.log(`Trying model: ${model}`);
 
-			return text;
-		} catch (err) {
-			const retryable =
-				isTimeout(err) ||
-				err instanceof BadJsonError ||
-				(err instanceof ApiError && RETRYABLE.includes(err.status));
-			if (retryable && !isLast) {
-				console.warn(
-					`${model} failed (${(err as Error).name}), trying ${models[i + 1]}`,
-				);
-				continue;
-			}
-			throw err;
-		}
-	}
-	throw new Error('unreachable');
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt.user,
+        config: {
+          systemInstruction: prompt.system,
+          temperature: prompt.temperature ?? 0.7,
+          responseMimeType: prompt.json
+            ? "application/json"
+            : "text/plain",
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.LOW,
+          },
+          abortSignal: AbortSignal.timeout(TIMEOUT),
+        },
+      });
+
+      const text = response.text ?? "";
+
+      // Check if response is valid JSON
+      if (prompt.json) {
+        try {
+          JSON.parse(text);
+        } catch {
+          throw new InvalidJsonError(`${model} returned invalid JSON`);
+        }
+      }
+
+      return text;
+
+    } catch (error) {
+      console.log(`Model ${model} failed:`, error);
+
+      // Check whether we can try another model
+      if (isRetryable(error)) {
+        console.log("Trying fallback model...");
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error("All Gemini models failed");
+}
+
+
+const FIRST_CHUNK_TIMEOUT = 10000;
+
+export async function* streamGemini(
+  env: Env,
+  prompt: Prompt
+): AsyncGenerator<string> {
+
+  const ai = new GoogleGenAI({
+    apiKey: env.GEMINI_API_KEY,
+  });
+
+  const models = [
+    env.GEMINI_MODEL,
+    env.GEMINI_FALLBACK_MODEL,
+  ];
+
+  for (const model of models) {
+    const controller = new AbortController();
+
+    let firstChunkReceived = false;
+
+    const timer = setTimeout(() => {
+      controller.abort();
+    }, FIRST_CHUNK_TIMEOUT);
+
+    try {
+      console.log(`Streaming from: ${model}`);
+
+      const stream = await ai.models.generateContentStream({
+        model: model,
+        contents: prompt.user,
+        config: {
+          systemInstruction: prompt.system,
+          temperature: prompt.temperature ?? 0.7,
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.LOW,
+          },
+          abortSignal: controller.signal,
+        },
+      });
+
+      for await (const chunk of stream) {
+
+        if (!firstChunkReceived) {
+          firstChunkReceived = true;
+          clearTimeout(timer);
+          console.log("First chunk received");
+        }
+
+        if (chunk.text) {
+          yield chunk.text;
+        }
+      }
+
+      return;
+
+    } catch (error) {
+      console.log(`Streaming failed for ${model}:`, error);
+
+      if (!firstChunkReceived && isRetryable(error)) {
+        continue;
+      }
+
+      throw error;
+
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  throw new Error("All streaming models failed");
 }
