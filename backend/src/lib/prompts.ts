@@ -38,10 +38,13 @@ ${scriptRule(lang)}
 
 Write a spoken lesson as 7–9 scenes. Each scene = what you SAY (narration, read aloud by a voice) + ONE visual the screen SHOWS.
 
-Return JSON: {"language": string, "title": string, "scenes": Scene[]}
+OUTPUT FORMAT — JSON Lines, strictly:
+- Line 1: {"language": string, "title": string}
+- Then exactly one scene per line.
+- One complete JSON object per line. No markdown, no code fences, no [ ] around the lines, nothing else.
 Scene: {"id": number, "kind": "teach" | "quiz", "narration": string, "onScreen": string, "visual": Visual, "quiz"?: Quiz}
 
-- narration: 25–60 words, written for the ear. No symbols or code read character by character.
+- narration: 25–60 words, written for the ear. Never put code, brackets or symbols like [ ] { } or backticks in narration — say it in words.
 - onScreen: 2–8 word caption.
 - Visual — choose the one that best SHOWS the narration:
   {"type":"title","heading":str,"subheading"?:str}
@@ -51,7 +54,7 @@ Scene: {"id": number, "kind": "teach" | "quiz", "narration": string, "onScreen":
   {"type":"queue","items":[front→back],"action"?:"enqueue"|"dequeue"}
   {"type":"linkedlist","nodes":[...],"highlight"?:[int]}
   {"type":"tree","nodes":[{"id":str,"label":str,"parent":str|null}]}
-  {"type":"code","language":str,"code":str,"highlightLines"?:[int]}
+  {"type":"code","language":str,"code":str (≤10 lines),"highlightLines"?:[1-based line numbers]}
   {"type":"flow","steps":[str],"active"?:int}
   {"type":"compare","left":{"title":str,"items":[str]},"right":{"title":str,"items":[str]}}
 - Make consecutive visuals build on each other (same array, then a pointer moves, then a value is inserted) — like a live blackboard.
