@@ -1,11 +1,11 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "bodha-ai",
-  "main": "src/index.ts",
-  "compatibility_date": "2026-11-08",
-  "vars": {
-    "GEMINI_MODEL": "gemini-2.5-flash",
-    "TTS_MODEL": "timbre-v2.5",
-    "STT_MODEL": "prisma-v3.0",
-  },
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "bodha-ai",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-11-08",
+	"vars": {
+		"GEMINI_MODEL": "gemini-2.5-flash",
+		"TTS_MODEL": "timbre-v2.5",
+		"STT_MODEL": "prisma-v3.0"
+	}
 }
