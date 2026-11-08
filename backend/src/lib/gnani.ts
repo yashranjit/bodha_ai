@@ -1,7 +1,7 @@
-const GNANI_BASE = "https://api.vachana.ai";
+const GNANI_BASE = 'https://api.vachana.ai';
 
 export class GnaniError extends Error {
-	name = "GnaniError";
+	name = 'GnaniError';
 	constructor(
 		public status: number,
 		detail: string,
@@ -16,10 +16,10 @@ export async function synthesize(
 	opts: { text: string; language: string; voice: string },
 ): Promise<Response> {
 	const res = await fetch(`${GNANI_BASE}/api/v1/tts/inference`, {
-		method: "POST",
+		method: 'POST',
 		headers: {
-			"Content-Type": "application/json",
-			"X-API-Key-ID": env.GNANI_API_KEY,
+			'Content-Type': 'application/json',
+			'X-API-Key-ID': env.GNANI_API_KEY,
 		},
 		body: JSON.stringify({
 			text: opts.text,
@@ -31,8 +31,8 @@ export async function synthesize(
 				sample_rate: 48000,
 				num_channels: 1,
 				sample_width: 2,
-				encoding: "linear_pcm",
-				container: "wav",
+				encoding: 'linear_pcm',
+				container: 'wav',
 			},
 		}),
 	});
@@ -46,13 +46,13 @@ export async function transcribe(
 	opts: { audio: File; language: string },
 ): Promise<{ transcript: string; detectedLanguage?: string }> {
 	const form = new FormData();
-	form.append("audio_file", opts.audio, opts.audio.name || "question.wav");
-	form.append("model", env.STT_MODEL);
-	form.append("language_code", opts.language);
+	form.append('audio_file', opts.audio, opts.audio.name || 'question.wav');
+	form.append('model', env.STT_MODEL);
+	form.append('language_code', opts.language);
 
 	const res = await fetch(`${GNANI_BASE}/stt/v3`, {
-		method: "POST",
-		headers: { "X-API-Key-ID": env.GNANI_API_KEY },
+		method: 'POST',
+		headers: { 'X-API-Key-ID': env.GNANI_API_KEY },
 		body: form,
 	});
 
@@ -65,7 +65,7 @@ export async function transcribe(
 	};
 	if (data.success === false) throw new GnaniError(502, JSON.stringify(data));
 	return {
-		transcript: data.transcript ?? "",
+		transcript: data.transcript ?? '',
 		detectedLanguage: data.detected_language_code,
 	};
 }
