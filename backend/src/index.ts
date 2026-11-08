@@ -1,7 +1,5 @@
 import { Hono } from 'hono';
-
 import { LANGUAGES } from './lib/languages';
-
 import { lesson } from './routes/lesson';
 
 const app = new Hono<{ Bindings: Env }>();
