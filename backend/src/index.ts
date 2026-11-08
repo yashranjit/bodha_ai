@@ -11,12 +11,4 @@ app.get("/api/languages", (c) =>
 	),
 );
 
-// temporary check
-app.get("/api/env-check", (c) =>
-	c.json({
-		gemini: Boolean(c.env.GEMINI_API_KEY),
-		gnani: Boolean(c.env.GNANI_API_KEY),
-		model: c.env.GEMINI_MODEL,
-	}),
-);
 export default app;
