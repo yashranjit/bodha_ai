@@ -19,18 +19,23 @@ export function LessonPlayer({ scenes, language, done }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const scene = scenes[index];
   const next = scenes[index + 1];
+  const speakIdRef = useRef(0);
 
   const speak = useCallback(
     async (text: string) => {
+      const id = ++speakIdRef.current;
       const audio = audioRef.current;
       if (!audio) return;
       try {
-        audio.src = await getSpeechUrl(text, language);
+        const url = await getSpeechUrl(text, language);
+        if (id !== speakIdRef.current) return;
+        audio.src = url;
         await audio.play();
       } catch (err) {
-        if (err instanceof DOMException && err.name === "NotAllowedError")
-          setPhase("blocked");
-        else console.warn("Voice unavailable:", err);
+        if (id !== speakIdRef.current) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        audio.removeAttribute("src");
+        setPhase("blocked");
       }
     },
     [language],
@@ -142,7 +147,7 @@ export function LessonPlayer({ scenes, language, done }: Props) {
               }}
               className="absolute inset-0 m-auto h-16 w-64 rounded-xl border-2 border-stone-800 bg-amber-300 text-2xl"
             >
-              ▶ Start the lesson
+              ▶ Tap to continue
             </button>
           )}
         </div>
