@@ -1,10 +1,15 @@
 @import "tailwindcss";
 
-@theme {
-  --font-hand: "Kalam", "Baloo Tammudu 2", "Baloo Thambi 2"; "Baloo Tamma 2"; cursive;
+:root {
+  --hand-fonts:
+    "Kalam", "Baloo Tammudu 2", "Baloo Thambi 2", "Baloo Tamma 2", cursive;
 }
 
-body{
+@theme {
+  --font-hand: var(--hand-fonts);
+}
+
+body {
   background-color: #fdfbf5;
   background-image: radial-gradient(#d9d4c7 1px, transparent 1x);
   background-size: 22px 22px;
