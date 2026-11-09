@@ -36,7 +36,7 @@ export function TitleVisual({ v }: { v: Of<"title"> }) {
   );
 }
 
-export function PointVisual({ v }: { v: Of<"points"> }) {
+export function PointsVisual({ v }: { v: Of<"points"> }) {
   return (
     <div className="py-4">
       {v.heading && <h3 className="mb-5 text-3xl">{v.heading}</h3>}

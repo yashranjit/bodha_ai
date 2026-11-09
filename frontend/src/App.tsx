@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLesson } from "./hooks/useLesson";
 import type { Language } from "./lib/types";
+import { LessonPlayer } from "./components/LessonPlayer";
 
 export default function App() {
   const { meta, scenes, status, error, start } = useLesson();
@@ -61,23 +62,13 @@ export default function App() {
       )}
       {error && <p className="mt-8 text-xl text-rose-600">{error}</p>}
       {meta && <h2 className="mt-10 text-3xl">{meta.title}</h2>}
-      <ol className="mt-4 space-y-4">
-        {scenes.map((s) => (
-          <li
-            key={s.id}
-            className="rounded-xl border-2 border-dashed border-stone-300 bg-white/60 p-4"
-          >
-            <div className="text-sm text-stone-500">
-              Scene {s.id} · {s.visual.type}
-              {s.kind === "quiz" && " · quiz"}
-            </div>
-            {s.onScreen && <div className="text-2xl">{s.onScreen}</div>}
-            <p className="mt-1 text-lg">{s.narration}</p>
-          </li>
-        ))}
-      </ol>
-      {status === "streaming" && (
-        <p className="mt-4 text-stone-500">Writing more...</p>
+      {meta && scenes.length > 0 && (
+        <LessonPlayer
+          key={meta.title} // a new lesson = a fresh player
+          scenes={scenes}
+          language={meta.language}
+          done={status === "done" || status === "error"}
+        />
       )}
     </main>
   );

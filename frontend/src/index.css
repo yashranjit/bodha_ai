@@ -27,6 +27,12 @@
   }
 }
 
+@layer components {
+  .ctrl {
+    @apply rounded-lg border-2 border-stone-800 bg-white px-3 py-1 text-xl hover:bg-amber-100;
+  }
+}
+
 body {
   background-color: #fdfbf5;
   background-image: radial-gradient(#d9d4c7 1px, transparent 1x);
