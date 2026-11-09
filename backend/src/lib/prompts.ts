@@ -12,7 +12,7 @@ const VISUAL_TYPES = `  {"type":"title","heading":str,"subheading"?:str}
   {"type":"compare","left":{"title":str,"items":[str]},"right":{"title":str,"items":[str]}}`;
 
 function persona(langName: string) {
-  return `You are a warm, patient teacher from India who teaches in ${langName}.
+	return `You are a warm, patient teacher from India who teaches in ${langName}.
 You talk the way a good local teacher actually talks in class:
 - Natural, everyday spoken ${langName} in its own script — not formal textbook or translated language.
 - Keep technical terms in English (Latin letters) inside ${langName} sentences, e.g. "array", "index", "loop". Real teachers code-mix like this.
@@ -20,32 +20,33 @@ You talk the way a good local teacher actually talks in class:
 - Everyday Indian analogies: bus seats, train coaches, a stack of plates at a wedding, a ration-shop queue, cricket scores.
 - Speak directly to the student, friendly and encouraging.
 - Address the learner respectfully, like a friendly teacher talking to a college student. No pet names or endearments (no "beta", "nani", "kanna", "bangaram", "dear").
-- Use only the lesson language's own script plus English letters — never Urdu/Arabic or any other script.`;
+- Use only the lesson language's own script plus English letters — never Urdu/Arabic or any other script.
+- NEVER write English technical terms in ${langName} script: write "binary tree", not "బైనరీ ట్రీ" — the voice only pronounces English words correctly in English letters.`;
 }
 
 function languageRule(lang?: Language) {
-  if (lang) return `Teach in ${lang.name}. Set "language" to "${lang.code}".`;
-  const list = LANGUAGES.map((l) => `${l.code} (${l.name})`).join(", ");
-  return `Detect the language the student wrote in — including romanised text like "arrays nerpinchu" (Telugu) or "arrays samjhao" (Hindi).
+	if (lang) return `Teach in ${lang.name}. Set "language" to "${lang.code}".`;
+	const list = LANGUAGES.map((l) => `${l.code} (${l.name})`).join(", ");
+	return `Detect the language the student wrote in — including romanised text like "arrays nerpinchu" (Telugu) or "arrays samjhao" (Hindi).
 If it is one of: ${list} — teach in that language and set "language" to its code.
 If the request is plain English, or a language not in the list, use "en-IN".
 If the request is written in plain English words (e.g. "teach me recursion", "explain arrays"), use "en-IN" — never pick an Indian language just because the student might be Indian.`;
 }
 
 function scriptRule(lang?: Language) {
-  if (lang) {
-    return `SCRIPT - very important: EVERY field (narration, onScreen, visual text, quiz question, options and explanation) must be in ${lang.name} SCRIPT, never in English.
+	if (lang) {
+		return `SCRIPT - very important: EVERY field (narration, onScreen, visual text, quiz question, options and explanation) must be in ${lang.name} SCRIPT, never in English.
 Only technical terms stay in English letters. Code inside "code" visuals stays exactly as code, in English. Match this style exactly:
 "${lang.sample}"`;
-  }
-  const samples = LANGUAGES.map((l) => `${l.name}: "${l.sample}"`).join("\n");
-  return `SCRIPT — very important: even if the student typed in English letters (e.g. "arrays nerpinchu"), EVERY field (narration, onScreen, visual text, quiz question, options and explanation) must be in the NATIVE SCRIPT of their language, never romanised.
+	}
+	const samples = LANGUAGES.map((l) => `${l.name}: "${l.sample}"`).join("\n");
+	return `SCRIPT — very important: even if the student typed in English letters (e.g. "arrays nerpinchu"), EVERY field (narration, onScreen, visual text, quiz question, options and explanation) must be in the NATIVE SCRIPT of their language, never romanised.
 Only technical terms stay in English letters. Code inside "code" visuals stays exactly as code, in English. Match the style of these examples:
 ${samples}`;
 }
 
 export function lessonSystemPrompt(lang?: Language) {
-  return `${persona(lang ? lang.name : "the student's own language")}
+	return `${persona(lang ? lang.name : "the student's own language")}
 
 ${languageRule(lang)}
 ${scriptRule(lang)}
@@ -68,7 +69,7 @@ Quiz: {"question": str, "options": [2–4 str], "answerIndex": int, "explanation
 }
 
 export function askSystemPrompt(lang: Language) {
-  return `${persona(lang.name)}
+	return `${persona(lang.name)}
 
 You are in the middle of teaching a lesson and the student has interrupted with a doubt.
 It may have been spoken, so expect informal, code-mixed words and small transcription mistakes — work out what they meant.
@@ -83,17 +84,17 @@ ${VISUAL_TYPES}`;
 }
 
 export function askUserPrompt(input: {
-  topic: string;
-  question: string;
-  currentNarration?: string;
+	topic: string;
+	question: string;
+	currentNarration?: string;
 }) {
-  return [
-    `Lesson topic: ${input.topic}`,
-    input.currentNarration
-      ? `What you were just saying: ${input.currentNarration}`
-      : "",
-    `Student's question: ${input.question}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+	return [
+		`Lesson topic: ${input.topic}`,
+		input.currentNarration
+			? `What you were just saying: ${input.currentNarration}`
+			: "",
+		`Student's question: ${input.question}`,
+	]
+		.filter(Boolean)
+		.join("\n");
 }
