@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getSpeechUrl } from "../lib/tts";
 import type { Scene, Visual } from "../lib/types";
 import { SceneVisual } from "../visuals/SceneVisual";
+import { MicButton } from "./MicButton";
 
 // This tells us which part of the lesson the student is currently in.
 // Keeping the phases as a fixed list prevents accidental state values.
@@ -55,6 +56,15 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 	// This lets us cancel an AI doubt request if the student changes scenes.
 	const askControllerRef = useRef<AbortController | null>(null);
 
+	// Stop audio and cancel pending work when the lesson player is removed.
+	useEffect(() => {
+		return () => {
+			speakIdRef.current += 1;
+			audioRef.current?.pause();
+			askControllerRef.current?.abort();
+		};
+	}, []);
+
 	// Get the current scene and the one after it using the current index.
 	const scene = scenes[index];
 	const next = scenes[index + 1];
@@ -104,6 +114,13 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		setPhase("speaking");
 		void speak(scene.narration ?? "");
 	}, [scene, speak]);
+
+	// Pre-load the "thinking" line so it plays instantly when a doubt comes in
+	useEffect(() => {
+		void getSpeechUrl(THINKING[language] ?? THINKING["en-IN"], language).catch(
+			() => {},
+		);
+	}, [language]);
 
 	// Prepare the next scene audio early to reduce the wait between scenes.
 	useEffect(() => {
@@ -226,7 +243,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 			// The student may have changed scenes while waiting. Ignore an outdated response.
 			if (controller.signal.aborted) return;
 
-			setDoubtAnswer({ question: questionText, ...data });
+			setDoubtAnswer({ ...data, question: questionText });
 			setPhase("speaking");
 
 			if (data.narration) {
@@ -325,7 +342,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 						</div>
 					)}
 
-					{/* Students can ask a question without leaving the lesson player. */}
+					{/* Students can ask a question using text or their voice. */}
 					<form
 						onSubmit={(event) => {
 							event.preventDefault();
@@ -341,7 +358,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 						<div className="mb-2 text-sm text-stone-500">
 							✋ Ask a doubt, in any language
 						</div>
-						<div className="flex gap-2">
+						<div className="flex flex-wrap gap-2">
 							<input
 								value={question}
 								onChange={(event) => setQuestion(event.target.value)}
@@ -356,6 +373,11 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 							>
 								Ask
 							</button>
+							<MicButton
+								onStart={() => audioRef.current?.pause()}
+								onTranscript={(text) => void askDoubt(text)}
+								disabled={phase === "answering"}
+							/>
 						</div>
 					</form>
 
