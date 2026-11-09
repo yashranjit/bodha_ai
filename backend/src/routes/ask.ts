@@ -1,26 +1,27 @@
-import { Hono } from 'hono';
-import { z } from 'zod';
-import { generateGemini } from '../lib/gemini';
-import { getLanguage } from '../lib/languages';
-import { AnswerSchema } from '../lib/lessonSchema';
-import { askSystemPrompt, askUserPrompt } from '../lib/prompts';
+import { Hono } from "hono";
+import { z } from "zod";
+import { generateGemini } from "../lib/gemini";
+import { getLanguage } from "../lib/languages";
+import { AnswerSchema } from "../lib/lessonSchema";
+import { askSystemPrompt, askUserPrompt } from "../lib/prompts";
 
 const AskRequest = z.object({
 	topic: z.string().trim().min(1).max(120),
 	language: z.string(),
 	question: z.string().trim().min(1).max(500),
 	currentNarration: z.string().max(1000).optional(),
+	lessonFinished: z.boolean().optional(),
 });
 
 export const ask = new Hono<{ Bindings: Env }>();
 
 // POST /api/ask
-ask.post('/', async (c) => {
+ask.post("/", async (c) => {
 	const parsed = AskRequest.safeParse(await c.req.json().catch(() => null));
 	if (!parsed.success) {
 		return c.json(
 			{
-				error: 'Send { topic, language, question}',
+				error: "Send { topic, language, question}",
 				details: z.prettifyError(parsed.error),
 			},
 			400,

@@ -48,6 +48,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 	const [paused, setPaused] = useState(false);
 	const [doubtAnswer, setDoubtAnswer] = useState<DoubtAnswer | null>(null);
 	const [question, setQuestion] = useState("");
+	const finishedRef = useRef(false);
 
 	// Refs let us control the audio player without causing extra re-renders.
 	const audioRef = useRef<HTMLAudioElement>(null);
@@ -155,6 +156,10 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		if (phase === "answering" && !doubtAnswer?.narration) return;
 
 		if (doubtAnswer?.narration) {
+			if (finishedRef.current) {
+				setPhase("finished");
+				return;
+			}
 			setDoubtAnswer(null);
 			setPhase("speaking");
 			void speak(scene?.narration ?? "");
@@ -215,6 +220,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		askControllerRef.current = controller;
 
 		audioRef.current?.pause();
+		finishedRef.current = phase === "finished";
 		setPhase("answering");
 		setDoubtAnswer({ question: questionText });
 
@@ -231,6 +237,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 					language,
 					question: questionText,
 					currentNarration: scene.narration,
+					lessonFinished: finishedRef.current,
 				}),
 			});
 

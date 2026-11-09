@@ -5,7 +5,7 @@ import { useLesson } from "./hooks/useLesson";
 import type { Language } from "./lib/types";
 
 export default function App() {
-	const { meta, scenes, status, error, start } = useLesson();
+	const { meta, scenes, status, error, start, reset } = useLesson();
 	const [topic, setTopic] = useState("");
 	const [language, setLanguage] = useState("auto");
 	const [languages, setLanguages] = useState<Language[]>([]);
@@ -38,9 +38,9 @@ export default function App() {
 		if (topic.trim().length >= 2) teach(topic.trim());
 	};
 
-	// The landing page gets a microphone so students can speak a topic
-	// instead of having to type it. The compact lesson header stays text-only.
-	const form = (showMic = false) => (
+	// The topic form is shared by the landing page and the lesson header.
+	// The mic lets students speak a topic instead of typing it.
+	const form = (
 		<form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
 			<input
 				value={topic}
@@ -67,17 +67,20 @@ export default function App() {
 			>
 				Teach me
 			</button>
-
-			{showMic && (
-				<MicButton
-					disabled={busy}
-					onTranscript={(spokenTopic) => {
-						setTopic(spokenTopic);
-						start(spokenTopic, language !== "auto" ? language : undefined);
-					}}
-					language={language !== "auto" ? language : undefined}
-				/>
-			)}
+			<MicButton
+				language={language !== "auto" ? language : undefined}
+				disabled={busy}
+				// A lesson may be playing — pause it so the mic doesn't record the tutor
+				onStart={() => {
+					document.querySelectorAll("audio").forEach((audio) => {
+						audio.pause();
+					});
+				}}
+				onTranscript={(spokenTopic) => {
+					setTopic(spokenTopic);
+					start(spokenTopic, language !== "auto" ? language : undefined);
+				}}
+			/>
 		</form>
 	);
 
@@ -87,8 +90,20 @@ export default function App() {
 		>
 			{active ? (
 				<header className="mb-6 flex flex-wrap items-center gap-4">
-					<h1 className="text-4xl">Bodha</h1>
-					<div className="min-w-[320px] flex-1">{form(false)}</div>
+					<h1 className="text-4xl">
+						<button
+							type="button"
+							onClick={() => {
+								reset();
+								setTopic("");
+							}}
+							className="cursor-pointer hover:text-amber-600"
+							title="Back to home"
+						>
+							Bodha
+						</button>
+					</h1>
+					<div className="min-w-[320px] flex-1">{form}</div>
 				</header>
 			) : (
 				<div className="text-center">
@@ -96,7 +111,7 @@ export default function App() {
 					<p className="mt-2 text-2xl text-stone-500">
 						Learn anything, in your own language
 					</p>
-					<div className="mt-10">{form(true)}</div>
+					<div className="mt-10">{form}</div>
 					<div className="mt-6 flex flex-wrap justify-center gap-2">
 						{EXAMPLES.map((ex) => (
 							<button

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
+import { CACHE_TTL, lessonKey } from "../lib/cache";
 import { detectLanguage } from "../lib/detect";
 import { streamGemini } from "../lib/gemini";
 import { getLanguage } from "../lib/languages";
@@ -35,9 +36,17 @@ lesson.post("/", async (c) => {
 	if (!lang) return c.json({ error: `Unsupported language: ${langCode}` }, 400);
 
 	return streamSSE(c, async (stream) => {
+		const cacheKey = await lessonKey(lang.code, topic);
+		const cached = await c.env.CACHE.get<{ meta: unknown; scenes: unknown[] }>(
+			cacheKey,
+			"json",
+		);
 		const splitter = new LineSplitter();
 		let sentMeta = false;
 		let count = 0;
+
+		let savedMeta: unknown = null;
+		const savedScenes: unknown[] = [];
 
 		const handleLine = async (line: string) => {
 			let raw: unknown;
@@ -54,6 +63,8 @@ lesson.post("/", async (c) => {
 					meta.success && getLanguage(meta.data.language)
 						? meta.data.language
 						: undefined;
+				const metaObj = meta.data;
+				savedMeta = metaObj;
 				await stream.writeSSE({
 					event: "meta",
 					data: JSON.stringify({
@@ -70,6 +81,8 @@ lesson.post("/", async (c) => {
 				return;
 			}
 			count++;
+			const out = { id: count, ...scene.data };
+			savedScenes.push(out);
 			await stream.writeSSE({
 				event: "scene",
 				data: JSON.stringify({ id: count, ...scene.data }),
@@ -91,6 +104,18 @@ lesson.post("/", async (c) => {
 				event: "done",
 				data: JSON.stringify({ count }),
 			});
+
+			if (savedMeta && savedScenes.length >= 3) {
+				c.executionCtx.waitUntil(
+					c.env.CACHE.put(
+						cacheKey,
+						JSON.stringify({ meta: savedMeta, scenes: savedScenes }),
+						{
+							expirationTtl: CACHE_TTL,
+						},
+					),
+				);
+			}
 		} catch (err) {
 			console.log(err);
 			await stream.writeSSE({

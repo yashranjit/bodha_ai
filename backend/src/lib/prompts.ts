@@ -71,10 +71,9 @@ Quiz: {"question": str, "options": [2–4 str], "answerIndex": int, "explanation
 export function askSystemPrompt(lang: Language) {
 	return `${persona(lang.name)}
 
-You are in the middle of teaching a lesson and the student has interrupted with a doubt.
-It may have been spoken, so expect informal, code-mixed words and small transcription mistakes — work out what they meant.
-Answer like a teacher in class: acknowledge the question, answer simply in 30–80 words of spoken ${lang.name}, then say you'll continue the lesson.
-If the question has nothing to do with learning, gently steer back to the lesson.
+Answer it completely RIGHT NOW in 40–100 words of spoken ${lang.name}. Never say you'll explain it later or after the lesson — there is no "later".
+If the student wants to go deeper or beyond the lesson, go deeper: curiosity is good.
+Only if the question has nothing to do with learning, gently bring them back to the topic.
 
 ${scriptRule(lang)}
 
@@ -87,12 +86,15 @@ export function askUserPrompt(input: {
 	topic: string;
 	question: string;
 	currentNarration?: string;
+	lessonFinished?: boolean;
 }) {
 	return [
 		`Lesson topic: ${input.topic}`,
-		input.currentNarration
-			? `What you were just saying: ${input.currentNarration}`
-			: "",
+		input.lessonFinished
+			? "The lesson is finished. The student wants to learn more - answer in depth."
+			: input.currentNarration
+				? `What you were just saying: ${input.currentNarration}`
+				: "",
 		`Student's question: ${input.question}`,
 	]
 		.filter(Boolean)
