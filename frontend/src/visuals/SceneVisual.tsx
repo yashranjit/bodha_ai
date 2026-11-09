@@ -2,6 +2,14 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Visual } from "../lib/types";
 import { ArrayVisual } from "./ArrayVisual";
 import { CodeVisual, PointsVisual, TitleVisual } from "./basic";
+import {
+  CompareVisual,
+  FlowVisual,
+  LinkedListVisual,
+  QueueVisual,
+  StackVisual,
+} from "./structures";
+import { TreeVisual } from "./TreeVisual";
 
 function Draw({ visual }: { visual: Visual }) {
   switch (visual.type) {
@@ -13,8 +21,18 @@ function Draw({ visual }: { visual: Visual }) {
       return <ArrayVisual v={visual} />;
     case "code":
       return <CodeVisual v={visual} />;
-    default:
-      return null;
+    case "stack":
+      return <StackVisual v={visual} />;
+    case "queue":
+      return <QueueVisual v={visual} />;
+    case "linkedlist":
+      return <LinkedListVisual v={visual} />;
+    case "tree":
+      return <TreeVisual v={visual} />;
+    case "flow":
+      return <FlowVisual v={visual} />;
+    case "compare":
+      return <CompareVisual v={visual} />;
   }
 }
 
