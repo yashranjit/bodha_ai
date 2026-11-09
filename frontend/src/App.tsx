@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { LessonPlayer } from "./components/LessonPlayer";
+import { MicButton } from "./components/MicButton";
 import { useLesson } from "./hooks/useLesson";
 import type { Language } from "./lib/types";
 
@@ -37,8 +38,10 @@ export default function App() {
 		if (topic.trim().length >= 2) teach(topic.trim());
 	};
 
-	const form = (
-		<form onSubmit={onSubmit} className="flex gap-2">
+	// The landing page gets a microphone so students can speak a topic
+	// instead of having to type it. The compact lesson header stays text-only.
+	const form = (showMic = false) => (
+		<form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
 			<input
 				value={topic}
 				onChange={(e) => setTopic(e.target.value)}
@@ -59,11 +62,18 @@ export default function App() {
 			</select>
 			<button
 				type="submit"
-				disabled={busy}
-				className="rounded-lg border-2 border-stone-800 bg-amber-300 px-5 text-xl disabled:opacity-50"
+				disabled={busy || topic.trim().length < 2}
+				className="rounded-lg border-2 border-stone-800 bg-amber-300 px-5 py-2 text-xl disabled:opacity-50"
 			>
 				Teach me
 			</button>
+
+			{showMic && (
+				<MicButton
+					disabled={busy}
+					onTranscript={(spokenTopic) => teach(spokenTopic)}
+				/>
+			)}
 		</form>
 	);
 
@@ -74,7 +84,7 @@ export default function App() {
 			{active ? (
 				<header className="mb-6 flex flex-wrap items-center gap-4">
 					<h1 className="text-4xl">Bodha</h1>
-					<div className="min-w-[320px] flex-1">{form}</div>
+					<div className="min-w-[320px] flex-1">{form(false)}</div>
 				</header>
 			) : (
 				<div className="text-center">
@@ -82,7 +92,7 @@ export default function App() {
 					<p className="mt-2 text-2xl text-stone-500">
 						Learn anything, in your own language
 					</p>
-					<div className="mt-10">{form}</div>
+					<div className="mt-10">{form(true)}</div>
 					<div className="mt-6 flex flex-wrap justify-center gap-2">
 						{EXAMPLES.map((ex) => (
 							<button
