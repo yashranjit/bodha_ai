@@ -8,7 +8,7 @@ interface Props {
 	onStart?: () => void;
 
 	// Sends the converted speech text back to the parent component.
-	onTranscript: (text: string) => void;
+	onTranscript: (text: string, language?: string) => void;
 
 	// Allows the parent component to disable the microphone button.
 	disabled?: boolean;
@@ -90,7 +90,7 @@ export function MicButton({ onStart, onTranscript, disabled }: Props) {
 
 			// Send the recognized text back to the parent component.
 			// The lesson player can now use it as the student's question.
-			onTranscript(transcript);
+			onTranscript(transcript, data.language);
 		} catch (err) {
 			// Show a useful message if something goes wrong.
 			setError(err instanceof Error ? err.message : "Couldn't hear that");

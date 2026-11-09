@@ -32,7 +32,7 @@ lesson.post("/", async (c) => {
 	const { topic, language } = parsed.data;
 	const langCode = language ?? (await detectLanguage(c.env, topic));
 	const lang = getLanguage(langCode);
-	if (!lang) return c.json({ error: `Unsupported language: ${language}` }, 400);
+	if (!lang) return c.json({ error: `Unsupported language: ${langCode}` }, 400);
 
 	return streamSSE(c, async (stream) => {
 		const splitter = new LineSplitter();
