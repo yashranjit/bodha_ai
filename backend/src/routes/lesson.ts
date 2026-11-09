@@ -41,6 +41,20 @@ lesson.post("/", async (c) => {
 			cacheKey,
 			"json",
 		);
+		if (cached) {
+			await stream.writeSSE({
+				event: "meta",
+				data: JSON.stringify(cached.meta),
+			});
+			for (const s of cached.scenes) {
+				await stream.writeSSE({ event: "scene", data: JSON.stringify(s) });
+			}
+			await stream.writeSSE({
+				event: "done",
+				data: JSON.stringify({ count: cached.scenes.length, cached: true }),
+			});
+			return;
+		}
 		const splitter = new LineSplitter();
 		let sentMeta = false;
 		let count = 0;
@@ -53,25 +67,18 @@ lesson.post("/", async (c) => {
 			try {
 				raw = JSON.parse(line);
 			} catch {
-				console.log("skipping malformed line:", line.slice(0.8));
+				console.log("skipping malformed line:", line.slice(0, 80));
 				return;
 			}
 			if (!sentMeta) {
 				sentMeta = true;
 				const meta = MetaSchema.safeParse(raw);
-				const detected =
-					meta.success && getLanguage(meta.data.language)
-						? meta.data.language
-						: undefined;
-				const metaObj = meta.data;
+				const metaObj = {
+					language: lang.code,
+					title: meta.success ? meta.data.title : topic,
+				};
 				savedMeta = metaObj;
-				await stream.writeSSE({
-					event: "meta",
-					data: JSON.stringify({
-						language: detected ?? lang?.code ?? "en-IN",
-						title: meta.success ? meta.data.title : topic,
-					}),
-				});
+				await stream.writeSSE({ event: "meta", data: JSON.stringify(metaObj) });
 				if (meta.success) return;
 			}
 
@@ -85,7 +92,7 @@ lesson.post("/", async (c) => {
 			savedScenes.push(out);
 			await stream.writeSSE({
 				event: "scene",
-				data: JSON.stringify({ id: count, ...scene.data }),
+				data: JSON.stringify(out),
 			});
 		};
 

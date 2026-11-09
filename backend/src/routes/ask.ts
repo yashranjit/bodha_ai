@@ -1,3 +1,4 @@
+import { ThinkingLevel } from "@google/genai";
 import { Hono } from "hono";
 import { z } from "zod";
 import { generateGemini } from "../lib/gemini";
@@ -30,7 +31,7 @@ ask.post("/", async (c) => {
 	const lang = getLanguage(parsed.data.language);
 	if (!lang)
 		return c.json(
-			{ error: `Unsupported langugae: ${parsed.data.language}` },
+			{ error: `Unsupported language: ${parsed.data.language}` },
 			400,
 		);
 	try {
@@ -39,6 +40,7 @@ ask.post("/", async (c) => {
 			user: askUserPrompt(parsed.data),
 			json: true,
 			temperature: 0.6,
+			thinking: ThinkingLevel.MINIMAL,
 		});
 		const answer = AnswerSchema.safeParse(JSON.parse(text));
 		if (!answer.success) throw new Error(z.prettifyError(answer.error));

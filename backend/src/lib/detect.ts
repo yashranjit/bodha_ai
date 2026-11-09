@@ -23,6 +23,7 @@ Reply with ONLY one code from: ${list}`,
 			user: text,
 			temperature: 0,
 			thinking: ThinkingLevel.MINIMAL,
+			timeoutMs: 5000,
 		});
 		const code = answer.trim();
 		if (getLanguage(code)) return code;

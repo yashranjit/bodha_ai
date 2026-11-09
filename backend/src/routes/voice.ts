@@ -19,7 +19,7 @@ voice.post("/tts", async (c) => {
 	if (!parsed.success) {
 		return c.json(
 			{
-				error: "Send { text, langugae }",
+				error: "Send { text, language }",
 				details: z.prettifyError(parsed.error),
 			},
 			400,
@@ -59,7 +59,7 @@ voice.post("/tts", async (c) => {
 		console.log(err);
 		const status = err instanceof GnaniError && err.status === 429 ? 429 : 502;
 		return c.json(
-			{ error: "The tutor's voice is unvailable right now." },
+			{ error: "The tutor's voice is unavailable right now." },
 			status,
 		);
 	}
@@ -95,6 +95,9 @@ voice.post("/stt", async (c) => {
 		});
 	} catch (err) {
 		console.log(err);
-		return c.json({ error: "Couldn't hear that clearly. Please try again" });
+		return c.json(
+			{ error: "Couldn't hear that clearly. Please try again" },
+			502,
+		);
 	}
 });

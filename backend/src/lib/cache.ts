@@ -20,4 +20,4 @@ export function normalizeTopic(topic: string): string {
 }
 
 export const lessonKey = async (lang: string, topic: string) =>
-	`lesson:v1${lang}:${await sha256(normalizeTopic(topic))}`;
+	`lesson:v1:${lang}:${await sha256(normalizeTopic(topic))}`;

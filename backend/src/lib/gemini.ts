@@ -1,4 +1,4 @@
-import { ApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { ApiError, GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 interface Prompt {
 	system: string;
@@ -6,6 +6,7 @@ interface Prompt {
 	json?: boolean;
 	temperature?: number;
 	thinking?: ThinkingLevel;
+	timeoutMs?: number;
 }
 
 const aiErrors = [429, 500, 503];
@@ -13,14 +14,14 @@ const aiErrors = [429, 500, 503];
 const TIMEOUT = 30000;
 
 class InvalidJsonError extends Error {
-	name = 'InvalidJsonError';
+	name = "InvalidJsonError";
 }
 
 function isRetryable(error: unknown): boolean {
 	if (error instanceof ApiError) return aiErrors.includes(error.status);
 	return (
 		error instanceof Error &&
-		['TimeoutError', 'AbortError', 'InvalidJsonError'].includes(error.name)
+		["TimeoutError", "AbortError", "InvalidJsonError"].includes(error.name)
 	);
 }
 
@@ -44,15 +45,15 @@ export async function generateGemini(
 				config: {
 					systemInstruction: prompt.system,
 					temperature: prompt.temperature ?? 0.7,
-					responseMimeType: prompt.json ? 'application/json' : 'text/plain',
+					responseMimeType: prompt.json ? "application/json" : "text/plain",
 					thinkingConfig: {
 						thinkingLevel: prompt.thinking ?? ThinkingLevel.LOW,
 					},
-					abortSignal: AbortSignal.timeout(TIMEOUT),
+					abortSignal: AbortSignal.timeout(prompt.timeoutMs ?? TIMEOUT),
 				},
 			});
 
-			const text = response.text ?? '';
+			const text = response.text ?? "";
 
 			// Check if response is valid JSON
 			if (prompt.json) {
@@ -69,7 +70,7 @@ export async function generateGemini(
 
 			// Check whether we can try another model
 			if (isRetryable(error)) {
-				console.log('Trying fallback model...');
+				console.log("Trying fallback model...");
 				continue;
 			}
 
@@ -77,7 +78,7 @@ export async function generateGemini(
 		}
 	}
 
-	throw new Error('All Gemini models failed');
+	throw new Error("All Gemini models failed");
 }
 
 const FIRST_CHUNK_TIMEOUT = 10000;
@@ -121,7 +122,7 @@ export async function* streamGemini(
 				if (!firstChunkReceived) {
 					firstChunkReceived = true;
 					clearTimeout(timer);
-					console.log('First chunk received');
+					console.log("First chunk received");
 				}
 
 				if (chunk.text) {
@@ -143,5 +144,5 @@ export async function* streamGemini(
 		}
 	}
 
-	throw new Error('All streaming models failed');
+	throw new Error("All streaming models failed");
 }
