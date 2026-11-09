@@ -9,6 +9,24 @@
   --font-hand: var(--hand-fonts);
 }
 
+@layer base {
+  [lang|="te"] {
+    font-family:
+      "Baloo Tammudu 2",
+      "Kalam" cursive;
+  }
+  [lang|="ta"] {
+    font-family:
+      "Baloo Thambi 2",
+      "Kalam" cursive;
+  }
+  [lang|="ka"] {
+    font-family:
+      "Baloo Tamma 2",
+      "Kalam" cursive;
+  }
+}
+
 body {
   background-color: #fdfbf5;
   background-image: radial-gradient(#d9d4c7 1px, transparent 1x);
