@@ -87,95 +87,136 @@ export function LessonPlayer({ scenes, language, done }: Props) {
   if (!scene) return null;
   const subtitle =
     choice !== null && scene.quiz ? scene.quiz.explanation : scene.narration;
-
   return (
-    <section lang={language} className="mt-6">
-      <div className="relative min-h-[400px] rounded-2xl border-2 border-stone-800 bg-white/85 p-8 shadow-[6px_6px_0_#1f2937]">
-        <div className="mb-4 flex items-baseline justify-between gap-4">
-          <span className="text-2xl">{scene.onScreen}</span>
-          <span className="shrink-0 text-sm text-stone-500">
-            {index + 1} / {scenes.length}
-            {!done && "…"}
-          </span>
+    <section
+      lang={language}
+      className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
+    >
+      <div>
+        <div className="relative min-h-[460px] rounded-2xl border-2 border-stone-800 bg-white/85 p-8 shadow-[6px_6px_0_#1f2937]">
+          <div className="mb-4 flex items-baseline justify-between gap-4">
+            <span className="text-2xl">{scene.onScreen}</span>
+            <span className="shrink-0 text-sm text-stone-500">
+              {index + 1} / {scenes.length}
+              {!done && "…"}
+            </span>
+          </div>
+
+          <SceneVisual visual={scene.visual} />
+          {scene.quiz && (phase === "quiz" || choice !== null) && (
+            <div className="mt-6">
+              <p className="mb-3 text-2xl">{scene.quiz.question}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {scene.quiz.options.map((opt, i) => {
+                  const isAnswer = i === scene.quiz?.answerIndex;
+                  const color =
+                    choice === null
+                      ? "bg-amber-50 hover:bg-amber-100"
+                      : isAnswer
+                        ? "bg-emerald-200"
+                        : i === choice
+                          ? "bg-rose-200"
+                          : "bg-white opacity-60";
+                  return (
+                    <button
+                      type="button"
+                      key={opt}
+                      onClick={() => answer(i)}
+                      disabled={choice !== null}
+                      className={`rounded-xl border-2 border-stone-800 px-4 py-3 text-left text-xl ${color}`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {phase === "blocked" && (
+            <button
+              type="button"
+              onClick={() => {
+                setPhase("speaking");
+                speak(scene.narration);
+              }}
+              className="absolute inset-0 m-auto h-16 w-64 rounded-xl border-2 border-stone-800 bg-amber-300 text-2xl"
+            >
+              ▶ Start the lesson
+            </button>
+          )}
         </div>
 
-        <SceneVisual visual={scene.visual} />
-
-        {scene.quiz && (phase === "quiz" || choice !== null) && (
-          <div className="mt-6">
-            <p className="mb-3 text-2xl">{scene.quiz.question}</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {scene.quiz.options.map((opt, i) => {
-                const isAnswer = i === scene.quiz?.answerIndex;
-                const color =
-                  choice === null
-                    ? "bg-amber-50 hover:bg-amber-100"
-                    : isAnswer
-                      ? "bg-emerald-200"
-                      : i === choice
-                        ? "bg-rose-200"
-                        : "bg-white opacity-60";
-                return (
-                  <button
-                    type="button"
-                    key={opt}
-                    onClick={() => answer(i)}
-                    disabled={choice !== null}
-                    className={`rounded-xl border-2 border-stone-800 px-4 py-3 text-left text-xl ${color}`}
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {phase === "blocked" && (
+        <div className="mt-4 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => {
-              setPhase("speaking");
-              speak(scene.narration);
-            }}
-            className="absolute inset-0 m-auto h-16 w-64 rounded-xl border-2 border-stone-800 bg-amber-300 text-2xl"
+            onClick={() => index > 0 && setIndex(index - 1)}
+            className="ctrl"
           >
-            ▶ Start the lesson
+            ⏮
           </button>
-        )}
+          <button type="button" onClick={togglePause} className="ctrl">
+            {paused ? "▶" : "⏸"}
+          </button>
+          <button type="button" onClick={goNext} className="ctrl">
+            ⏭
+          </button>
+          {phase === "waiting" && (
+            <span className="text-stone-500">Preparing the next part…</span>
+          )}
+          {phase === "finished" && (
+            <>
+              <span className="text-xl">🎉 Lesson complete!</span>
+              <button type="button" onClick={replay} className="ctrl">
+                ↺ Replay
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      <p className="mt-4 min-h-[4rem] text-xl leading-relaxed text-stone-700">
-        {subtitle}
-      </p>
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)]">
+        <div className="rounded-xl border-2 border-stone-800 bg-white/85 p-4">
+          <div className="mb-1 text-sm text-stone-500">🗣 Now saying</div>
+          <p className="text-lg leading-relaxed">{subtitle}</p>
+        </div>
 
-      <div className="mt-2 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => index > 0 && setIndex(index - 1)}
-          className="ctrl"
-        >
-          ⏮
-        </button>
-        <button type="button" onClick={togglePause} className="ctrl">
-          {paused ? "▶" : "⏸"}
-        </button>
-        <button type="button" onClick={goNext} className="ctrl">
-          ⏭
-        </button>
-        {phase === "waiting" && (
-          <span className="text-stone-500">Preparing the next part…</span>
-        )}
-        {phase === "finished" && (
-          <>
-            <span className="text-xl">🎉 Lesson complete!</span>
-            <button type="button" onClick={replay} className="ctrl">
-              ↺ Replay
-            </button>
-          </>
-        )}
-      </div>
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border-2 border-stone-800 bg-white/85 p-3">
+          <div className="mb-2 px-3 text-sm text-stone-500">Lesson</div>
+          <ol className="space-y-1">
+            {scenes.map((s, i) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  onClick={() => setIndex(i)}
+                  className={`w-full rounded-lg px-3 py-2 text-left text-lg ${
+                    i === index
+                      ? "bg-amber-200"
+                      : i < index
+                        ? "text-stone-400"
+                        : "hover:bg-stone-100"
+                  }`}
+                >
+                  <span className="mr-2 text-sm">
+                    {i < index ? "✓" : i + 1}
+                  </span>
+                  {s.onScreen ?? `Scene ${i + 1}`}
+                  {s.quiz && " · ❓"}
+                </button>
+              </li>
+            ))}
+            {!done && (
+              <li className="animate-pulse px-3 py-2 text-stone-400">
+                writing the next part…
+              </li>
+            )}
+          </ol>
+        </div>
 
+        <div className="rounded-xl border-2 border-dashed border-stone-400 p-4 text-stone-400">
+          🎤 Ask a doubt — coming in Step 8
+        </div>
+      </aside>
       <audio
         ref={audioRef}
         onEnded={onEnded}
