@@ -3,9 +3,9 @@
 	"type": "module",
 	"scripts": {
 		"dev": "wrangler dev",
-		"deploy": "wrangler deploy --minify",
+		"deploy": "pnpm --dir ../frontend build && wrangler deploy --minify",
 		"cf-typegen": "wrangler types --env-interface CloudflareBindings",
-		"check":"biome check --write ./src",
+		"check": "biome check --write ./src",
 		"format": "biome format --write ./src"
 	},
 	"dependencies": {

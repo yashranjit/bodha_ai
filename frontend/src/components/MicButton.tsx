@@ -12,6 +12,8 @@ interface Props {
 
 	// Allows the parent component to disable the microphone button.
 	disabled?: boolean;
+
+	language?: string;
 }
 
 // Stop recording after 25 seconds.
@@ -19,7 +21,12 @@ interface Props {
 // API has a 30-second request limit.
 const MAX_RECORDING_MS = 25_000;
 
-export function MicButton({ onStart, onTranscript, disabled }: Props) {
+export function MicButton({
+	onStart,
+	onTranscript,
+	disabled,
+	language,
+}: Props) {
 	// Our custom hook handles starting and stopping microphone recording.
 	const { recording, start, stop } = useRecorder();
 
@@ -64,7 +71,7 @@ export function MicButton({ onStart, onTranscript, disabled }: Props) {
 			form.append("audio", wav, "question.wav");
 
 			// Let the SST service detect the Indian language.
-			form.append("language", "indic-auto");
+			form.append("language", language ?? "indic-auto");
 
 			// Send the recording to our backend API.
 			const response = await fetch("/api/stt", {

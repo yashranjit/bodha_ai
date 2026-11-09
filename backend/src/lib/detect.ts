@@ -12,36 +12,24 @@ const SCRIPTS: [RegExp, string][] = [
 ];
 
 export async function detectLanguage(env: Env, text: string): Promise<string> {
-	// First, check whether the text contains characters from a native script.
-	// If we find one, we already know the language and don't need AI.
-	for (const [script, code] of SCRIPTS) {
-		if (script.test(text)) return code;
-	}
-
 	try {
-		// Create a list of supported languages for Gemini to choose from.
-		const list = LANGUAGES.map(
-			(language) => `${language.code} = ${language.name}`,
-		).join(", ");
-
-		// Some students type Indian languages using English letters.
-		// For example, "arrays nerpinchu" is Telugu written in English letters.
-		// Gemini helps us identify these cases.
+		const list = LANGUAGES.map((l) => `${l.code} = ${l.name}`).join(", ");
 		const answer = await generateGemini(env, {
-			system: `Identify the language the user is speaking. Indian languages are often typed in English letters: "arrays nerpinchu" is Telugu, "stack samjhao" is Hindi, "sollunga" is Tamil. Plain English like "teach me recursion" is English.
+			system: `Identify which language the user actually SPOKE or typed.
+- Indian languages are often typed in English letters: "arrays nerpinchu" is Telugu, "stack samjhao" is Hindi.
+- Speech recognition sometimes writes ENGLISH sentences in Indian script: "ప్లీజ్ టీచ్ మీ అరేస్" is "please teach me arrays" → English. Judge by the WORDS, not the script.
+- Plain English like "teach me recursion" is English.
 Reply with ONLY one code from: ${list}`,
 			user: text,
 			temperature: 0,
 			thinking: ThinkingLevel.MINIMAL,
 		});
-
-		// Remove extra spaces and check whether Gemini returned a supported code.
 		const code = answer.trim();
-
-		// If the returned code isn't in our language list, use English as fallback.
-		return getLanguage(code) ? code : "en-IN";
+		if (getLanguage(code)) return code;
 	} catch {
-		// If Gemini fails for any reason, default to English.
-		return "en-IN";
+		// fall through to the script check below
 	}
+	// Gemini failed? Fall back to the script — right most of the time
+	for (const [script, code] of SCRIPTS) if (script.test(text)) return code;
+	return "en-IN";
 }

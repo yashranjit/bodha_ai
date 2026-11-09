@@ -71,10 +71,11 @@ export default function App() {
 			{showMic && (
 				<MicButton
 					disabled={busy}
-					onTranscript={(spokenTopic, detected) => {
+					onTranscript={(spokenTopic) => {
 						setTopic(spokenTopic);
-						start(spokenTopic, language !== "auto" ? language : detected);
+						start(spokenTopic, language !== "auto" ? language : undefined);
 					}}
+					language={language !== "auto" ? language : undefined}
 				/>
 			)}
 		</form>
