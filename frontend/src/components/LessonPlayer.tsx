@@ -1,8 +1,11 @@
+// React hooks help us store lesson progress and work with the audio element.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSpeechUrl } from "../lib/tts";
 import type { Scene, Visual } from "../lib/types";
 import { SceneVisual } from "../visuals/SceneVisual";
 
+// This tells us which part of the lesson the student is currently in.
+// Keeping the phases as a fixed list prevents accidental state values.
 type Phase =
 	| "speaking"
 	| "quiz"
@@ -11,6 +14,7 @@ type Phase =
 	| "blocked"
 	| "finished";
 
+// These are the values the parent component passes into LessonPlayer.
 interface Props {
 	scenes: Scene[];
 	language: string;
@@ -18,6 +22,7 @@ interface Props {
 	topic?: string;
 }
 
+// A short message in the student's language plays while the AI prepares an answer.
 const THINKING: Record<string, string> = {
 	"te-IN": "మంచి ప్రశ్న! ఒక్క నిమిషం.",
 	"hi-IN": "अच्छा सवाल है! एक मिनट।",
@@ -26,6 +31,7 @@ const THINKING: Record<string, string> = {
 	"en-IN": "Good question! Give me a second.",
 };
 
+// The AI can return screen text, spoken narration, and a visual.
 interface DoubtAnswer {
 	question: string;
 	narration?: string;
@@ -34,6 +40,7 @@ interface DoubtAnswer {
 }
 
 export function LessonPlayer({ scenes, language, done, topic }: Props) {
+	// State controls what the student sees and which part of the lesson is active.
 	const [index, setIndex] = useState(0);
 	const [phase, setPhase] = useState<Phase>("speaking");
 	const [choice, setChoice] = useState<number | null>(null);
@@ -41,13 +48,18 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 	const [doubtAnswer, setDoubtAnswer] = useState<DoubtAnswer | null>(null);
 	const [question, setQuestion] = useState("");
 
+	// Refs let us control the audio player without causing extra re-renders.
 	const audioRef = useRef<HTMLAudioElement>(null);
+	// Each speech request gets an ID so an older request cannot replace newer audio.
 	const speakIdRef = useRef(0);
+	// This lets us cancel an AI doubt request if the student changes scenes.
 	const askControllerRef = useRef<AbortController | null>(null);
 
+	// Get the current scene and the one after it using the current index.
 	const scene = scenes[index];
 	const next = scenes[index + 1];
 
+	// Turn text into audio and play it. The request ID protects against stale audio.
 	const speak = useCallback(
 		async (text: string) => {
 			const id = ++speakIdRef.current;
@@ -77,6 +89,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		[language],
 	);
 
+	// When the scene changes, stop old audio/API work, reset the quiz, and read the new scene.
 	useEffect(() => {
 		if (!scene) return;
 
@@ -92,12 +105,14 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		void speak(scene.narration ?? "");
 	}, [scene, speak]);
 
+	// Prepare the next scene audio early to reduce the wait between scenes.
 	useEffect(() => {
 		if (!next?.narration) return;
 		// Preload the next scene's speech audio.
 		void getSpeechUrl(next.narration, language).catch(() => {});
 	}, [next, language]);
 
+	// At the end of the current list, wait for more streamed scenes or finish the lesson.
 	useEffect(() => {
 		if (phase !== "waiting") return;
 
@@ -108,6 +123,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		}
 	}, [phase, index, scenes.length, done]);
 
+	// Move forward when the student presses Next or the current audio finishes.
 	const goNext = () => {
 		if (index + 1 < scenes.length) {
 			setIndex((current) => current + 1);
@@ -116,6 +132,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		}
 	};
 
+	// Decide what happens after audio ends: show a quiz, return from a doubt, or continue.
 	const onEnded = () => {
 		// The short "thinking" message may finish while the API is still working.
 		if (phase === "answering" && !doubtAnswer?.narration) return;
@@ -134,6 +151,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		}
 	};
 
+	// Save the selected option and read the explanation aloud.
 	const handleQuizAnswer = (selectedIndex: number) => {
 		if (!scene?.quiz || choice !== null) return;
 
@@ -142,6 +160,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		void speak(scene.quiz.explanation ?? "");
 	};
 
+	// Control the real audio element. Its play/pause events keep the button state updated.
 	const togglePause = () => {
 		const audio = audioRef.current;
 		if (!audio) return;
@@ -156,6 +175,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		}
 	};
 
+	// Clear the current answer/quiz choice and restart the lesson from the beginning.
 	const replay = () => {
 		setDoubtAnswer(null);
 		setChoice(null);
@@ -168,6 +188,8 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		}
 	};
 
+	// Ask the backend to explain something the student did not understand.
+	// The lesson audio pauses while the AI prepares the answer.
 	const askDoubt = async (questionText: string) => {
 		if (!scene || phase === "answering") return;
 
@@ -182,6 +204,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		void speak(THINKING[language] ?? THINKING["en-IN"]);
 
 		try {
+			// Send the question with the current topic and narration so the AI has lesson context.
 			const response = await fetch("/api/ask", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -200,6 +223,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 
 			const data: DoubtAnswer = await response.json();
 
+			// The student may have changed scenes while waiting. Ignore an outdated response.
 			if (controller.signal.aborted) return;
 
 			setDoubtAnswer({ question: questionText, ...data });
@@ -226,6 +250,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		}
 	};
 
+	// Scenes may be empty while lesson content is still loading.
 	if (!scene) {
 		return (
 			<div className="rounded-xl border-2 border-stone-800 bg-white/85 p-6">
@@ -234,6 +259,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 		);
 	}
 
+	// Prefer the AI answer visual; otherwise keep showing the current lesson visual.
 	const shownVisual = doubtAnswer?.visual ?? scene.visual;
 	const subtitle = doubtAnswer?.narration
 		? doubtAnswer.narration
@@ -241,6 +267,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 			? scene.quiz.explanation
 			: scene.narration;
 
+	// Main layout: lesson content on the left and progress/narration on the right.
 	return (
 		<section
 			lang={language}
@@ -298,6 +325,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 						</div>
 					)}
 
+					{/* Students can ask a question without leaving the lesson player. */}
 					<form
 						onSubmit={(event) => {
 							event.preventDefault();
@@ -351,6 +379,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 					)}
 				</div>
 
+				{/* Controls for moving between scenes and pausing/resuming the narration. */}
 				<div className="mt-4 flex items-center gap-3">
 					<button
 						type="button"
@@ -393,6 +422,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 				</div>
 			</div>
 
+			{/* Side panel: current narration and a clickable list of lesson scenes. */}
 			<aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)]">
 				<div className="rounded-xl border-2 border-stone-800 bg-white/85 p-4">
 					<div className="mb-1 text-sm text-stone-500">🗣 Now saying</div>
@@ -433,6 +463,7 @@ export function LessonPlayer({ scenes, language, done, topic }: Props) {
 				</div>
 			</aside>
 
+			{/* Audio element used to play the generated narration. */}
 			<audio
 				ref={audioRef}
 				onEnded={onEnded}
