@@ -1,41 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --hand-fonts:
-    "Kalam", "Baloo Tammudu 2", "Baloo Thambi 2", "Baloo Tamma 2", cursive;
+    --hand-fonts:
+        "Kalam", "Baloo Tammudu 2", "Baloo Thambi 2", "Baloo Tamma 2", cursive;
 }
 
 @theme {
-  --font-hand: var(--hand-fonts);
+    --font-hand: var(--hand-fonts);
 }
 
 @layer base {
-  [lang|="te"] {
-    font-family:
-      "Baloo Tammudu 2",
-      "Kalam" cursive;
-  }
-  [lang|="ta"] {
-    font-family:
-      "Baloo Thambi 2",
-      "Kalam" cursive;
-  }
-  [lang|="ka"] {
-    font-family:
-      "Baloo Tamma 2",
-      "Kalam" cursive;
-  }
+    [lang|="te"] {
+        font-family: "Baloo Tammudu 2", "Kalam", cursive;
+    }
+    [lang|="ta"] {
+        font-family: "Baloo Thambi 2", "Kalam", cursive;
+    }
+    [lang|="kn"] {
+        font-family: "Baloo Tamma 2", "Kalam", cursive;
+    }
 }
 
 @layer components {
-  .ctrl {
-    @apply rounded-lg border-2 border-stone-800 bg-white px-3 py-1 text-xl hover:bg-amber-100;
-  }
+    .ctrl {
+        @apply rounded-lg border-2 border-stone-800 bg-white px-3 py-1 text-xl hover:bg-amber-100;
+    }
 }
 
 body {
-  background-color: #fdfbf5;
-  background-image: radial-gradient(#d9d4c7 1px, transparent 1x);
-  background-size: 22px 22px;
-  color: #1f2937;
+    background-color: #fdfbf5;
+    background-image: radial-gradient(#d9d4c7 1px, transparent 1px);
+    background-size: 22px 22px;
+    color: #1f2937;
 }
